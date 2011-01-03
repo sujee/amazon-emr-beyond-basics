@@ -1,0 +1,28 @@
+
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?> 
+<configuration>
+    <property>
+        <name>mapreduce.map.java.opts</name>
+        <value>-Xmx1024M</value>
+    </property>
+
+    <property>
+        <name>mapreduce.reduce.java.opts</name>
+        <value>-Xmx3000M</value>
+    </property>
+
+    <property>
+        <name>mapred.tasktracker.reduce.tasks.maximum</name>
+        <value>3</value>
+        <decription>4 is running out of memory</description>
+    </property>
+
+    <!--
+    <property>
+        <name>mapred.tasktracker.map.tasks.maximum</name>
+        <value>8</value>
+    </property>
+    -->
+
+</configuration>
