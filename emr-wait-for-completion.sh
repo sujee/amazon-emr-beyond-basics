@@ -2,28 +2,35 @@
 
 echo "=== $JOBID started...."
 
-LOGDIR="/var/www/hadoop-logs/${JOBNAME}__${JOBID}__${TIMESTAMP}"
+LOGDIR="/var/logs/hadoop-logs/${JOBNAME}__${JOBID}__${TIMESTAMP}"
 mkdir -p "${LOGDIR}"
 
 ## stuff below is to wait till the jobs is done
 
-STATUS=$(elastic-mapreduce  --describe  $JOBID | ruby job-status-parse.rb)
+# credit ekampf (https://gist.github.com/762371)
+STATUS=$(elastic-mapreduce --list --nosteps | grep $JOBID | awk '{print $2}')
 
-#while  [ "$STATUS" != "\"RUNNING\"" ]
-while  [  "$STATUS" = "\"STARTING\""  -o   "$STATUS" = "\"BOOTSTRAPPING\""   ]
+while  [  "$STATUS" = "STARTING"  -o   "$STATUS" = "BOOTSTRAPPING"   ]
 do
     sleep 60
-    STATUS=$(elastic-mapreduce  --describe  $JOBID | ruby job-status-parse.rb)
+    STATUS=$(elastic-mapreduce --list --nosteps | grep $JOBID | awk '{print $2}')
 done
 t2=$(date +%s)
 echo "=== Job started RUNNING in " $(expr $t2 - $t1) " seconds.  status : $STATUS"
 
 
+if [ "$STATUS" = "RUNNING" ]
+then
+    elastic-mapreduce --list | grep "$JOBID"
+    MASTER_NODE=$(elastic-mapreduce --list | grep "$JOBID"| awk '{print $3}')
+    echo "Task tracker interface : http://$MASTER_NODE:9100"
+    echo "Namenode interface : http://$MASTER_NODE:9101"
+fi
 
-while [ "$STATUS" =  "\"RUNNING\""  ]
+while [ "$STATUS" =  "RUNNING"  ]
 do
     sleep 60
-    STATUS=$(elastic-mapreduce  --describe  $JOBID | ruby job-status-parse.rb)
+    STATUS=$(elastic-mapreduce --list --nosteps | grep $JOBID | awk '{print $2}')
     s3cmd sync "s3://my_bucket/emr-logs/${JOBID}/" "${LOGDIR}/"  > /dev/null 2> /dev/null
     cp -f "${LOGDIR}/steps/1/syslog" "${LOGDIR}/mapreduce.log" 2> /dev/null
 done
